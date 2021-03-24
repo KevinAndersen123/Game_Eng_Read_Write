@@ -12,8 +12,8 @@ std::vector<std::thread> readerThreads;
 std::vector<std::thread> writerThreads;
 
 int bosshealth = 100;
-int numReaders = 0;
-int numWriters = 0;
+int numOfReaders = 0;
+int numOfWriters = 0;
 std::mutex lock;
 
 void Reader(int t_readerID)
@@ -21,19 +21,21 @@ void Reader(int t_readerID)
 	while (true)
 	{
 		std::this_thread::sleep_for(std::chrono::seconds(1));
-
-		if (numWriters <= 0)
+		while (numOfWriters > 0)
 		{
-			lock.lock();
-			numReaders = numReaders + 1;
-			lock.unlock();
-			
-			std::cout << "ReaderID:" + std::to_string(t_readerID) << ": Boss' health: " + std::to_string(bosshealth) << std::endl;
-			
-			lock.lock();
-			numReaders = numReaders - 1;
-			lock.unlock();
+			// Wait
 		}
+
+		lock.lock();
+		numOfReaders = numOfReaders + 1;
+		lock.unlock();
+
+		std::cout << "ReaderID:" + std::to_string(t_readerID) << ": Boss' health: " + std::to_string(bosshealth) << std::endl;
+
+		lock.lock();
+		numOfReaders = numOfReaders - 1;
+		lock.unlock();
+
 	}
 }
 
@@ -42,19 +44,24 @@ void Writer(int t_writerID)
 	while (true)
 	{
 		std::this_thread::sleep_for(std::chrono::seconds(1));
-		if (numReaders <= 0 && numWriters <= 0)
+		while (numOfReaders > 0 || numOfWriters > 0)
 		{
-			lock.lock();
-			numWriters = numWriters + 1;
-			lock.unlock();
-			
-			std::cout << "Player:" + std::to_string(t_writerID) << " attacks" << std::endl;
-
-			lock.lock();
-			bosshealth--;
-			numWriters = numWriters - 1;
-			lock.unlock();
+			// Wait
 		}
+
+		lock.lock();
+		numOfWriters = numOfWriters + 1;
+		lock.unlock();
+
+		std::cout << "Player:" + std::to_string(t_writerID) << " attacks" << std::endl;
+
+		lock.lock();
+		bosshealth--;
+		lock.unlock();
+
+		lock.lock();
+		numOfWriters = numOfWriters - 1;
+		lock.unlock();
 	}
 }
 
